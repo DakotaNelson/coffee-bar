@@ -1,0 +1,23 @@
+{
+  "name": "coffee-bar",
+  "version": "0.0.0",
+  "description": "A simple webapp to assist with running a coffee bar.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/DakotaNelson/coffee-bar.git"
+  },
+  "author": "Dakota Nelson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DakotaNelson/coffee-bar/issues"
+  },
+  "homepage": "https://github.com/DakotaNelson/coffee-bar",
+  "dependencies": {
+    "logfmt": "~1.1.2",
+    "express": "~4.5.0"
+  }
+}
