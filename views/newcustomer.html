@@ -1,0 +1,18 @@
+<% include header.html %>
+
+<!--<script> $('form').on('submit',app.newCustomer); </script>-->
+
+<h1>Add a Customer</h1>
+<form role="form">
+  <div class="form-group">
+    <label for="name">Name</label>
+    <input name="name" type="text" class="form-control" id="name" placeholder="Enter name">
+  </div>
+  <div class="form-group">
+    <label for="tab">Starting Tab</label>
+    <input name="tab" type="text" class="form-control" id="tab" placeholder="Enter initial tab">
+  </div>
+  <button type="button" value="Submit" onclick="app.newCustomer()" class="btn btn-default">Submit</button>
+</form>
+
+<% include footer.html %>

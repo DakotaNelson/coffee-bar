@@ -32,16 +32,13 @@ mongo.connect(dbString, function(err,dbase) {
 // Root path
 app.get('/', function(req, res) {
   var customers = db.collection('customers').find();
-  console.log(customers);
   customers.toArray(function(err, results) {
-    console.log(results);
     var i;
     var customers = '';
     for(i=0;i<results.length;i++) {
       customer = results[i];
       customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
       app.render('customer.html',{customer:customer},function(err,html) {
-        console.log(html);
         customers = customers + html;
       });
     }
@@ -69,11 +66,20 @@ app.get('/listcustomers', function(req,res) {
   });
 });
 
+// Form to add a new customer
+app.get('/newcustomer', function(req,res) {
+  res.render('newcustomer.html', {
+    locals: {
+      'title':'New Customer'
+    }
+  });
+});
+
 // Add a customer (JSON)
 app.post('/addcustomer', function(req,res) {
+  console.log(req.body)
   if(req.body && req.body.name && req.body.tab) {
     db.collection('customers').insert({name:req.body.name,tab:req.body.tab,drinks:[]},function(err,docs) {
-      console.log(req.body);
       res.send('{"status":"ok","message":"Customer Added"}');
     });
   }
