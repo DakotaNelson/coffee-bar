@@ -5,3 +5,18 @@ body {
   padding: 40px 15px;
   text-align: center;
 }
+.alignleft {
+  float: left;
+  text-align: left;
+  padding-left: 8px;
+  width: 50%;
+}
+.alignright {
+  float: right;
+  text-align: right;
+  padding-right: 8px;
+  width: 50%;
+}
+.customer-row {
+  cursor: pointer;
+}

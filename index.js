@@ -29,18 +29,38 @@ mongo.connect(dbString, function(err,dbase) {
   console.log("Connected to MongoDB");
 });
 
+// Root path
 app.get('/', function(req, res) {
-  var body = 'test text';
-  res.render('index.html', {
-    locals: {
-      'body': body,
-      'title':'Index Page',
-      stylesheets: ['//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css','/public/stylesheets/style.css'],
-      jslibs: ['//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js','/public/javascript/jquery.min.js']
-      }
+  var customers = db.collection('customers').find();
+  console.log(customers);
+  customers.toArray(function(err, results) {
+    console.log(results);
+    var i;
+    var customers = '';
+    for(i=0;i<results.length;i++) {
+      customer = results[i];
+      customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
+      app.render('customer.html',{customer:customer},function(err,html) {
+        console.log(html);
+        customers = customers + html;
+      });
+    }
+
+    var newCustomer = {name:"<b>Add New</b>",link:"/newcustomer",tab:0};
+    app.render('customer.html',{customer:newCustomer},function(err,html) {
+      customers = html + customers;
+    });
+
+    res.render('index.html', {
+      locals: {
+        'tabledata': customers,
+        'title':'Barmaster 9001'
+        }
+    });
   });
 });
 
+// List all customers (JSON)
 app.get('/listcustomers', function(req,res) {
   var record = db.collection('customers').find();
   record.toArray(function(err, results) {
@@ -49,6 +69,7 @@ app.get('/listcustomers', function(req,res) {
   });
 });
 
+// Add a customer (JSON)
 app.post('/addcustomer', function(req,res) {
   if(req.body && req.body.name && req.body.tab) {
     db.collection('customers').insert({name:req.body.name,tab:req.body.tab,drinks:[]},function(err,docs) {
