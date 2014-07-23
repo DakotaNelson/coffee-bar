@@ -1,5 +1,7 @@
-<tr class="drink-row" onclick="document.location = '<%- drink.link %>';">
-    <td class="alignleft"><%- drink.name %></td>
-    <td class="alignleft"><em><%- drink.teaser %></em></td>
-    <td class="alignright">$<%= drink.cost%></td>
+<tr class="drink-row row" onclick="document.location = '<%- drink.link %>';">
+  <td>
+    <span class="col-md-3"><%- drink.name %></span>
+    <span class="col-md-8"><em><%- drink.teaser %></em></span>
+    <span class="col-md-1">$<%- drink.cost %></span>
+  </td>
 </tr>

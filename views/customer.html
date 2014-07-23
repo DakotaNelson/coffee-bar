@@ -1,4 +1,7 @@
-<tr class="customer-row" onclick="document.location = '<%- customer.link %>';">
-    <td class="alignleft"><%- customer.name %></td>
-    <td class="alignright">$<%= customer.tab%></td>
+<tr class="customer-row row" onclick="document.location = '<%- customer.link %>';">
+  <td>
+    <span class='col-md-3'><%- customer.name %></span>
+    <span class='col-md-8'></span>
+    <span class='col-md-1'>$<%= customer.tab%></span>
+  </td>
 </tr>
