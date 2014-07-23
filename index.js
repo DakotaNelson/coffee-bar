@@ -31,6 +31,7 @@ mongo.connect(dbString, function(err,dbase) {
 
 // Root path
 app.get('/', function(req, res) {
+  // fetch customers and render them
   var customers = db.collection('customers').find();
   customers.toArray(function(err, results) {
     var i;
@@ -43,13 +44,15 @@ app.get('/', function(req, res) {
       });
     }
 
+    // Add the 'create a new customer' entry
     var newCustomer = {name:"<b>Add New</b>",link:"/newcustomer",tab:0};
     app.render('customer.html',{customer:newCustomer},function(err,html) {
       customers = html + customers;
     });
 
-    res.render('index.html', {
+    res.render('table.html', {
       locals: {
+        'tabletitle': 'Customers',
         'tabledata': customers,
         'title':'Barmaster 9001'
         }
@@ -57,14 +60,53 @@ app.get('/', function(req, res) {
   });
 });
 
+// allows use of the :customer route param
+app.param('customer',function(req,res,next,id) {
+  var customer = db.collection('customers').findOne({name:id},function(err,customer) {
+    req.customer = customer;
+    next();
+  });
+});
+
+app.get('/:customer/buy', function(req,res) {
+  console.log(req.customer);
+
+  var drinks = db.collection('drinks').find();
+  drinks.toArray(function(err, results) {
+    var i;
+    var drinks = '';
+    for(i=0;i<results.length;i++) {
+      drink = results[i];
+      app.render('drink.html',{drink:drink},function(err,html) {
+        drinks = drinks + html;
+      });
+    }
+
+    // Add the 'create custom drink' entry
+    var newDrink = {name:"<b>Create Custom Drink</b>",link:"/newdrink",cost:0};
+    app.render('drink.html',{drink:newDrink},function(err,html) {
+      drinks = html + drinks;
+    });
+
+
+    res.render('table.html', {
+      locals: {
+        'tabletitle': 'Choose a Drink',
+        'tabledata': drinks,
+        'title':'Barmaster 9001'
+      }
+    });
+  });
+});
+
 // List all customers (JSON)
-app.get('/listcustomers', function(req,res) {
+/*app.get('/listcustomers', function(req,res) {
   var record = db.collection('customers').find();
   record.toArray(function(err, results) {
     //console.dir(results);
     res.send(results);
   });
-});
+});*/
 
 // Form to add a new customer
 app.get('/newcustomer', function(req,res) {
