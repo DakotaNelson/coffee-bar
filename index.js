@@ -68,6 +68,14 @@ app.param('customer',function(req,res,next,id) {
   });
 });
 
+// allows use of the :drink route param
+app.param('drink',function(req,res,next,id) {
+  var drink = db.collection('drinks').findOne({name:id},function(err,drink) {
+    req.drink = drink;
+    next();
+  });
+});
+
 app.get('/:customer/buy', function(req,res) {
   console.log(req.customer);
 
@@ -77,6 +85,7 @@ app.get('/:customer/buy', function(req,res) {
     var drinks = '';
     for(i=0;i<results.length;i++) {
       drink = results[i];
+      drink.link = '/' + encodeURIComponent(req.customer.name) + '/buy/' + encodeURIComponent(drink.name);
       app.render('drink.html',{drink:drink},function(err,html) {
         drinks = drinks + html;
       });
@@ -97,6 +106,34 @@ app.get('/:customer/buy', function(req,res) {
       }
     });
   });
+});
+
+app.get('/:customer/buy/:drink', function(req,res) {
+  console.log(req.customer);
+  console.log(req.drink);
+
+  var customer = req.customer;
+  var drink = req.drink;
+  var purchase = [new Date(),drink.name];
+
+  db.collection('customers').update(
+    {name:customer.name},
+    {
+      $inc: { tab: -drink.price }, // subtracts the price from the customer's tab
+      $push: { drinks: purchase } // and logs this purchase
+    },
+    function(err,object) {
+      customer.firstName = customer.name.split(" ")[0];
+
+      res.render('sale.html', {
+        locals: {
+          'title': 'Purchase',
+          'customer': customer,
+          'drink': drink
+        }
+      });
+    }
+  );
 });
 
 // Form to add a new customer
