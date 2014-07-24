@@ -2,13 +2,21 @@ var app = {
   newCustomer: function() {
     var name = $('#name').val();
     var tab = new Number($('#tab').val());
+
+    var valid = true;
+    $('#name').parent('div').removeClass('has-error');
+    $('#tab').parent('div').removeClass('has-error');
+
     if(!name) {
       $('#name').parent('div').addClass('has-error');
+      valid = false;
     }
-    else if(!tab || isNaN(tab)) {
+    if(!tab || isNaN(tab)) {
       $('#tab').parent('div').addClass('has-error');
+      valid = false;
     }
-    else {
+
+    if(valid) {
       //valid
       $.ajax({
         type: 'POST',
@@ -26,9 +34,13 @@ var app = {
     var name = $('#name').val();
     var teaser = $('#teaser').val();
     var recipe = $('#recipe').val();
-    var price = new Number($('#cost').val());
+    var price = new Number($('#price').val());
 
     var valid = true;
+    $('#name').parent('div').removeClass('has-error');
+    $('#teaser').parent('div').removeClass('has-error');
+    $('#recipe').parent('div').removeClass('has-error');
+    $('#price').parent('div').removeClass('has-error');
 
     if(!name) {
       $('#name').parent('div').addClass('has-error');
@@ -43,7 +55,7 @@ var app = {
       valid = false;
     }
     if(!price || isNaN(price)) {
-      $('#tab').parent('div').addClass('has-error');
+      $('#price').parent('div').addClass('has-error');
       valid = false;
     }
 

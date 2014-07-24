@@ -110,10 +110,10 @@ app.get('/newcustomer', function(req,res) {
 
 // Form to add a new drink
 app.get('/newdrink', function(req,res) {
-  console.log(req.query);
   res.render('newdrink.html', {
     locals: {
-      'title':'New Drink'
+      'title':'New Drink',
+      'success':req.query.success
     }
   });
 });
