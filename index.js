@@ -83,7 +83,7 @@ app.get('/:customer/buy', function(req,res) {
     }
 
     // Add the 'create custom drink' entry
-    var newDrink = {name:"<b>Create Custom Drink</b>",link:"/newdrink",cost:0};
+    var newDrink = {name:"<b>Create Custom Drink</b>",link:"/newdrink",price:0};
     app.render('drink.html',{drink:newDrink},function(err,html) {
       drinks = html + drinks;
     });
@@ -99,20 +99,21 @@ app.get('/:customer/buy', function(req,res) {
   });
 });
 
-// List all customers (JSON)
-/*app.get('/listcustomers', function(req,res) {
-  var record = db.collection('customers').find();
-  record.toArray(function(err, results) {
-    //console.dir(results);
-    res.send(results);
-  });
-});*/
-
 // Form to add a new customer
 app.get('/newcustomer', function(req,res) {
   res.render('newcustomer.html', {
     locals: {
       'title':'New Customer'
+    }
+  });
+});
+
+// Form to add a new drink
+app.get('/newdrink', function(req,res) {
+  console.log(req.query);
+  res.render('newdrink.html', {
+    locals: {
+      'title':'New Drink'
     }
   });
 });
@@ -127,5 +128,18 @@ app.post('/addcustomer', function(req,res) {
   }
   else {
     res.send('{"status":"nok","message":"Customer Data Missing"}');
+  }
+});
+
+// Add a drink (JSON)
+app.post('/adddrink', function(req,res) {
+  console.log(req.body)
+  if(req.body && req.body.name && req.body.teaser && req.body.recipe && req.body.price) {
+    db.collection('drinks').insert({name:req.body.name,teaser:req.body.teaser,recipe:req.body.recipe,price:req.body.price},function(err,docs) {
+      res.send('{"status":"ok","message":"Drink Added"}');
+    });
+  }
+  else {
+    res.send('{"status":"nok","message":"Drink Data Missing"}');
   }
 });
