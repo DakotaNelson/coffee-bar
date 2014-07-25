@@ -122,6 +122,7 @@ app.get('/:customer/buy/:drink', function(req,res) {
       $inc: { tab: -drink.price }, // subtracts the price from the customer's tab
       $push: { drinks: purchase } // and logs this purchase
     },
+    {safe:true},
     function(err,object) {
       customer.firstName = customer.name.split(" ")[0];
 
@@ -159,7 +160,7 @@ app.get('/newdrink', function(req,res) {
 app.post('/addcustomer', function(req,res) {
   console.log(req.body)
   if(req.body && req.body.name && req.body.tab) {
-    db.collection('customers').insert({name:req.body.name,tab:req.body.tab,drinks:[]},function(err,docs) {
+    db.collection('customers').insert({name:req.body.name,tab:+req.body.tab,drinks:[]},function(err,docs) {
       res.send('{"status":"ok","message":"Customer Added"}');
     });
   }
@@ -172,7 +173,7 @@ app.post('/addcustomer', function(req,res) {
 app.post('/adddrink', function(req,res) {
   console.log(req.body)
   if(req.body && req.body.name && req.body.teaser && req.body.recipe && req.body.price) {
-    db.collection('drinks').insert({name:req.body.name,teaser:req.body.teaser,recipe:req.body.recipe,price:req.body.price},function(err,docs) {
+    db.collection('drinks').insert({name:req.body.name,teaser:req.body.teaser,recipe:req.body.recipe,price:+req.body.price},function(err,docs) {
       res.send('{"status":"ok","message":"Drink Added"}');
     });
   }

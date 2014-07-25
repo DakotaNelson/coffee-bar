@@ -20,8 +20,8 @@ var app = {
       //valid
       $.ajax({
         type: 'POST',
-        url: '/adddrink',
-        data: {name:name,tab:tab},
+        url: '/addcustomer',
+        data: {name:name,tab:+tab},
         success: function() {
           window.location='/';
         }
@@ -63,7 +63,7 @@ var app = {
       $.ajax({
         type: 'POST',
         url: '/adddrink',
-        data: {name:name,teaser:teaser,recipe:recipe,price:price},
+        data: {name:name,teaser:teaser,recipe:recipe,price:+price},
         success: function() {
           window.location = '/newdrink?success=true';
         }
