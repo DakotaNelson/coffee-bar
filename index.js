@@ -2,6 +2,7 @@ var express =       require("express");
 var logfmt =        require("logfmt");
 var mongo =         require('mongodb').MongoClient;
 var bodyParser =    require('body-parser');
+var numeral =       require('numeral');
 
 var app = express();
 
@@ -39,6 +40,7 @@ app.get('/', function(req, res) {
     for(i=0;i<results.length;i++) {
       customer = results[i];
       customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
+      customer.tab = numeral(customer.tab).format('$0.00');
       app.render('customer.html',{customer:customer},function(err,html) {
         customers = customers + html;
       });
@@ -54,7 +56,8 @@ app.get('/', function(req, res) {
       locals: {
         'tabletitle': 'Customers',
         'tabledata': customers,
-        'title':'Barmaster 9001'
+        'title':'Barmaster 9001',
+        'active':'/'
         }
     });
   });
@@ -85,6 +88,7 @@ app.get('/:customer/buy', function(req,res) {
     var drinks = '';
     for(i=0;i<results.length;i++) {
       drink = results[i];
+      drink.price = numeral(drink.price).format('$0.00');
       drink.link = '/' + encodeURIComponent(req.customer.name) + '/buy/' + encodeURIComponent(drink.name);
       app.render('drink.html',{drink:drink},function(err,html) {
         drinks = drinks + html;
@@ -102,7 +106,8 @@ app.get('/:customer/buy', function(req,res) {
       locals: {
         'tabletitle': 'Choose a Drink',
         'tabledata': drinks,
-        'title':'Barmaster 9001'
+        'title':'Barmaster 9001',
+        'active':'/customer/buy'
       }
     });
   });
@@ -125,12 +130,14 @@ app.get('/:customer/buy/:drink', function(req,res) {
     {safe:true},
     function(err,object) {
       customer.firstName = customer.name.split(" ")[0];
+      drink.price = numeral(drink.price).format('$0.00');
 
       res.render('sale.html', {
         locals: {
           'title': 'Purchase',
           'customer': customer,
-          'drink': drink
+          'drink': drink,
+          'active':'/customer/buy/drink'
         }
       });
     }
@@ -141,7 +148,8 @@ app.get('/:customer/buy/:drink', function(req,res) {
 app.get('/newcustomer', function(req,res) {
   res.render('newcustomer.html', {
     locals: {
-      'title':'New Customer'
+      'title':'New Customer',
+      'active':'/newcustomer'
     }
   });
 });
@@ -151,7 +159,8 @@ app.get('/newdrink', function(req,res) {
   res.render('newdrink.html', {
     locals: {
       'title':'New Drink',
-      'success':req.query.success
+      'success':req.query.success,
+      'active':'/newdrink'
     }
   });
 });
