@@ -1,4 +1,5 @@
 var express =       require("express");
+var session =       require("express-session");
 var logfmt =        require("logfmt");
 var mongo =         require('mongodb').MongoClient;
 var bodyParser =    require('body-parser');
@@ -13,8 +14,8 @@ var port = Number(process.env.PORT || 5000);
 
 app.use(logfmt.requestLogger());
 
+app.use(session({ secret: 'keyboard cat', resave: true, saveUninitialized: true}));
 app.use(passport.initialize());
-//app.use(express.session({ secret: 'keyboard cat'}));
 app.use(passport.session());
 
 app.use(bodyParser.urlencoded({extended:false}));
@@ -42,14 +43,27 @@ passport.use(new LocalStrategy(
 ));
 
 passport.serializeUser(function(user, done) {
-  done(null,user.username);
+  console.log("Serializing: " + user.username);
+  done(null,user._id);
 });
 
-passport.deserializeUser(function(user, done) {
-  db.collection('users').find( { username: user }, function(err,user) {
+passport.deserializeUser(function(id, done) {
+  console.log("Deserializing: " + id);
+  db.collection('users').find({id:id}, function(err,user) {
+    console.log("AKA: " + user.username);
     done(err,user);
   });
 });
+
+function requireAuth(req, res, next) {
+  if(!req.isAuthenticated()) {
+    console.log("not authenticated!");
+    res.redirect('/login');
+  }
+  else {
+    next();
+  }
+}
 
 app.listen(port, function() {
   console.log("Listening on " + port);
@@ -63,19 +77,19 @@ mongo.connect(dbString, function(err,dbase) {
 });
 
 // Root path
-app.get('/', function(req, res) {
-  // fetch customers and render them
-  var customers = db.collection('customers').find();
-  customers.toArray(function(err, results) {
-    var i;
-    var customers = '';
-    for(i=0;i<results.length;i++) {
-      customer = results[i];
-      customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
-      customer.tab = numeral(customer.tab).format('$0.00');
-      app.render('customer.html',{customer:customer},function(err,html) {
-        customers = customers + html;
-      });
+app.get('/', requireAuth, function(req, res) {
+    // fetch customers and render them
+    var customers = db.collection('customers').find();
+    customers.toArray(function(err, results) {
+      var i;
+      var customers = '';
+      for(i=0;i<results.length;i++) {
+        customer = results[i];
+        customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
+        customer.tab = numeral(customer.tab).format('$0.00');
+        app.render('customer.html',{customer:customer},function(err,html) {
+          customers = customers + html;
+        });
     }
 
     // Add the 'create a new customer' entry
@@ -108,10 +122,7 @@ app.get('/login', function(req,res) {
 // login page POST endpoint
 app.post('/login',
     passport.authenticate('local', {successRedirect: '/',
-                                    failureRedirect: '/login'}),
-    function(req,res) {
-      console.log(req.user);
-});
+                                    failureRedirect: '/login'}));
 
 // allows use of the :customer route param
 app.param('customer',function(req,res,next,id) {
@@ -129,7 +140,7 @@ app.param('drink',function(req,res,next,id) {
   });
 });
 
-app.get('/:customer/buy', function(req,res) {
+app.get('/:customer/buy', requireAuth, function(req,res) {
   console.log(req.customer);
 
   var drinks = db.collection('drinks').find();
@@ -163,7 +174,7 @@ app.get('/:customer/buy', function(req,res) {
   });
 });
 
-app.get('/:customer/buy/:drink', function(req,res) {
+app.get('/:customer/buy/:drink', requireAuth, function(req,res) {
   console.log(req.customer);
   console.log(req.drink);
 
@@ -195,7 +206,7 @@ app.get('/:customer/buy/:drink', function(req,res) {
 });
 
 // Form to add a new customer
-app.get('/newcustomer', function(req,res) {
+app.get('/newcustomer', requireAuth, function(req,res) {
   res.render('newcustomer.html', {
     locals: {
       'title':'New Customer',
@@ -205,7 +216,7 @@ app.get('/newcustomer', function(req,res) {
 });
 
 // Form to add a new drink
-app.get('/newdrink', function(req,res) {
+app.get('/newdrink', requireAuth, function(req,res) {
   res.render('newdrink.html', {
     locals: {
       'title':'New Drink',
