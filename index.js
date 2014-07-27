@@ -3,6 +3,8 @@ var logfmt =        require("logfmt");
 var mongo =         require('mongodb').MongoClient;
 var bodyParser =    require('body-parser');
 var numeral =       require('numeral');
+var passport =      require('passport');
+var LocalStrategy = require('passport-local').Strategy;
 
 var app = express();
 
@@ -11,6 +13,10 @@ var port = Number(process.env.PORT || 5000);
 
 app.use(logfmt.requestLogger());
 
+app.use(passport.initialize());
+//app.use(express.session({ secret: 'keyboard cat'}));
+app.use(passport.session());
+
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
@@ -18,6 +24,32 @@ app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 app.use(express.static(__dirname + '/public'));
 
 app.engine('html',require('ejs').renderFile);
+
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    console.log("Querying for user: " + username);
+    db.collection('users').findOne({ username:username }, function(err, user) {
+      if(err) { return done(err); }
+      if (!user) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
+      if (!(user.password === password)) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+      return done(null, user);
+    });
+  }
+));
+
+passport.serializeUser(function(user, done) {
+  done(null,user.username);
+});
+
+passport.deserializeUser(function(user, done) {
+  db.collection('users').find( { username: user }, function(err,user) {
+    done(err,user);
+  });
+});
 
 app.listen(port, function() {
   console.log("Listening on " + port);
@@ -61,6 +93,24 @@ app.get('/', function(req, res) {
         }
     });
   });
+});
+
+// login page form
+app.get('/login', function(req,res) {
+  res.render('login.html', {
+    locals: {
+      'title':'Log In',
+      'active':'/login'
+    }
+  });
+});
+
+// login page POST endpoint
+app.post('/login',
+    passport.authenticate('local', {successRedirect: '/',
+                                    failureRedirect: '/login'}),
+    function(req,res) {
+      console.log(req.user);
 });
 
 // allows use of the :customer route param
