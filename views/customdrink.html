@@ -1,0 +1,20 @@
+<% include header.html %>
+
+<h1>Custom Drink</h1>
+<form role="form" autocomplete="off" class="form-horizontal">
+
+  <div class="form-group">
+    <label for="price" class="col-sm-2 control-label">Price</label>
+    <div class="col-sm-6">
+      <input name="price" type="text" class="form-control" id="price" placeholder="Enter drink price">
+    </div>
+  </div>
+
+  <input name="name" id="name" type="hidden" value="<%= customer.name %>">
+
+  <div class="col-sm-offset-2 col-sm-10">
+    <button type="button" value="Submit" onclick="app.customDrink()" class="btn btn-default">Submit</button>
+  </div>
+</form>
+
+<% include footer.html %>

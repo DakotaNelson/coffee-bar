@@ -35,6 +35,7 @@ passport.use(new LocalStrategy(
         return done(null, false, { message: 'Incorrect username.' });
       }
       if (!(user.password === password)) {
+        // TODO hash passwords before this goes live
         return done(null, false, { message: 'Incorrect password.' });
       }
       return done(null, user);
@@ -79,7 +80,7 @@ mongo.connect(dbString, function(err,dbase) {
 // Root path
 app.get('/', requireAuth, function(req, res) {
     // fetch customers and render them
-    var customers = db.collection('customers').find();
+    var customers = db.collection('customers').find().sort( {name:1});
     customers.toArray(function(err, results) {
       var i;
       var customers = '';
@@ -157,7 +158,7 @@ app.get('/:customer/buy', requireAuth, function(req,res) {
     }
 
     // Add the 'create custom drink' entry
-    var newDrink = {name:"<b>Create Custom Drink</b>",link:"/newdrink",price:0};
+    var newDrink = {name:"<b>Create One-Off Drink</b>",link:"/" + encodeURIComponent(req.customer.name) + "/one-off-drink",price:0};
     app.render('drink.html',{drink:newDrink},function(err,html) {
       drinks = html + drinks;
     });
@@ -226,8 +227,20 @@ app.get('/newdrink', requireAuth, function(req,res) {
   });
 });
 
+app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
+  console.log(req.customer.name);
+  res.render('customdrink.html', {
+    locals: {
+      'title':'Custom Drink',
+      'customer': req.customer,
+      'success':req.query.success,
+      'active':'/one-off-drink'
+    }
+  });
+});
+
 // Add a customer (JSON)
-app.post('/addcustomer', function(req,res) {
+app.post('/addcustomer', requireAuth, function(req,res) {
   console.log(req.body)
   if(req.body && req.body.name && req.body.tab) {
     db.collection('customers').insert({name:req.body.name,tab:+req.body.tab,drinks:[]},function(err,docs) {
@@ -240,7 +253,7 @@ app.post('/addcustomer', function(req,res) {
 });
 
 // Add a drink (JSON)
-app.post('/adddrink', function(req,res) {
+app.post('/adddrink', requireAuth, function(req,res) {
   console.log(req.body)
   if(req.body && req.body.name && req.body.teaser && req.body.recipe && req.body.price) {
     db.collection('drinks').insert({name:req.body.name,teaser:req.body.teaser,recipe:req.body.recipe,price:+req.body.price},function(err,docs) {
@@ -249,5 +262,27 @@ app.post('/adddrink', function(req,res) {
   }
   else {
     res.send('{"status":"nok","message":"Drink Data Missing"}');
+  }
+});
+
+app.post('/modify-tab', requireAuth, function(req,res) {
+  if(req.body && req.body.name && req.body.amount) {
+    var amount = +req.body.amount;
+    var name = req.body.name;
+    console.log("Adding " + amount + " to tab of " + name);
+
+    db.collection('customers').update(
+      {name: name},
+      {
+        $inc: { tab: amount }, // subtracts the price from the customer's tab
+      },
+      {safe:true},
+      function(err,object) {
+        res.send('{"status":"ok","message":"Tab Modified"}');
+      }
+    );
+  }
+  else {
+    res.send('{"status":"nok","message":"Data Missing"}');
   }
 });

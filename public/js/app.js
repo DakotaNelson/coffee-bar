@@ -70,5 +70,29 @@ var app = {
       });
     }
     return false;
+  },
+
+  customDrink: function() {
+    var valid = true;
+
+    var name = $('#name').val();
+    var amount = $('#price').val();
+    if(!amount || isNaN(amount)) {
+      $('#price').parent('div').addClass('has-error');
+      valid = false;
+    }
+    console.log(-amount);
+
+    if(valid) {
+      $.ajax({
+        type: 'POST',
+        url: '/modify-tab',
+        data: {name:name, amount:-amount},
+        success: function() {
+          window.location = '/';
+        }
+      });
+    }
+    return false;
   }
 };
