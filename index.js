@@ -28,7 +28,7 @@ app.engine('html',require('ejs').renderFile);
 
 passport.use(new LocalStrategy(
   function(username, password, done) {
-    console.log("Querying for user: " + username);
+    console.log("Authenticating user: " + username);
     db.collection('users').findOne({ username:username }, function(err, user) {
       if(err) { return done(err); }
       if (!user) {
@@ -49,9 +49,7 @@ passport.serializeUser(function(user, done) {
 });
 
 passport.deserializeUser(function(id, done) {
-  console.log("Deserializing: " + id);
   db.collection('users').find({id:id}, function(err,user) {
-    console.log("AKA: " + user.username);
     done(err,user);
   });
 });
@@ -142,8 +140,6 @@ app.param('drink',function(req,res,next,id) {
 });
 
 app.get('/:customer/buy', requireAuth, function(req,res) {
-  console.log(req.customer);
-
   var drinks = db.collection('drinks').find();
   drinks.toArray(function(err, results) {
     var i;
@@ -176,18 +172,22 @@ app.get('/:customer/buy', requireAuth, function(req,res) {
 });
 
 app.get('/:customer/buy/:drink', requireAuth, function(req,res) {
-  console.log(req.customer);
-  console.log(req.drink);
-
   var customer = req.customer;
   var drink = req.drink;
-  var purchase = [new Date(),drink.name];
+  var timestamp = new Date();
+
+  db.collection('transactions').insert({type: "purchase", drink: drink.name, customer: customer._id, timestamp: timestamp, amount: -drink.price},
+    {safe:true},
+    function(err, transactions) {
+      var transaction = transactions[0];
+      console.log("Transaction #" + transaction._id + ": " + customer.name + " bought a " + drink.name + " for $" + drink.price);
+    }
+  );
 
   db.collection('customers').update(
-    {name:customer.name},
+    {_id:customer._id},
     {
       $inc: { tab: -drink.price }, // subtracts the price from the customer's tab
-      $push: { drinks: purchase } // and logs this purchase
     },
     {safe:true},
     function(err,object) {
@@ -228,7 +228,6 @@ app.get('/newdrink', requireAuth, function(req,res) {
 });
 
 app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
-  console.log(req.customer.name);
   res.render('customdrink.html', {
     locals: {
       'title':'Custom Drink',
@@ -241,9 +240,8 @@ app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
 
 // Add a customer (JSON)
 app.post('/addcustomer', requireAuth, function(req,res) {
-  console.log(req.body)
   if(req.body && req.body.name && req.body.tab) {
-    db.collection('customers').insert({name:req.body.name,tab:+req.body.tab,drinks:[]},function(err,docs) {
+    db.collection('customers').insert({name:req.body.name,tab:+req.body.tab,transactions:[]},function(err,docs) {
       res.send('{"status":"ok","message":"Customer Added"}');
     });
   }
@@ -254,7 +252,6 @@ app.post('/addcustomer', requireAuth, function(req,res) {
 
 // Add a drink (JSON)
 app.post('/adddrink', requireAuth, function(req,res) {
-  console.log(req.body)
   if(req.body && req.body.name && req.body.teaser && req.body.recipe && req.body.price) {
     db.collection('drinks').insert({name:req.body.name,teaser:req.body.teaser,recipe:req.body.recipe,price:+req.body.price},function(err,docs) {
       res.send('{"status":"ok","message":"Drink Added"}');
@@ -269,18 +266,37 @@ app.post('/modify-tab', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.amount) {
     var amount = +req.body.amount;
     var name = req.body.name;
-    console.log("Adding " + amount + " to tab of " + name);
+    var type = req.body.type;
+    var drink = req.body.drink;
+    var timestamp = new Date();
+    console.log("Adding " + amount + " to tab of " + name + " because " + type);
 
-    db.collection('customers').update(
-      {name: name},
-      {
-        $inc: { tab: amount }, // subtracts the price from the customer's tab
-      },
-      {safe:true},
-      function(err,object) {
+    db.collection('customers').findOne({name: name},
+      function(err, customer) {
+        db.collection('customers').update(
+          {name: name},
+          {
+            $inc: { tab: amount }, // adds the amount (which may be negative) to the customer's tab
+          },
+          {safe:true},
+          function(err,customers) {
+          }
+        );
+
+        db.collection('transactions').insert(
+          {type: type, drink: drink, customer: customer._id, timestamp: timestamp, amount: amount},
+          {safe: true},
+          function(err, transactions) {
+            var transaction = transactions[0];
+            console.log(transaction);
+            console.log("Transaction #" + transaction._id + ": " + customer.name + "\'s tab was modified by $" + amount + " because of a " + type);
+          });
+
         res.send('{"status":"ok","message":"Tab Modified"}');
       }
     );
+
+
   }
   else {
     res.send('{"status":"nok","message":"Data Missing"}');

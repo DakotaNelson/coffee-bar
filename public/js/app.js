@@ -87,7 +87,21 @@ var app = {
       $.ajax({
         type: 'POST',
         url: '/modify-tab',
-        data: {name:name, amount:-amount},
+        data: {name:name, amount:-amount, type: "purchase", drink: "Custom Drink"},
+        success: function() {
+          window.location = '/';
+        }
+      });
+    }
+    return false;
+  },
+
+  makeDeposit: function() {
+    if(valid) {
+      $.ajax({
+        type: 'POST',
+        url: '/modify-tab',
+        data: {name:name, amount:+amount, type: "deposit", drink: null},
         success: function() {
           window.location = '/';
         }
