@@ -2,10 +2,12 @@ var express =       require("express");
 var session =       require("express-session");
 var logfmt =        require("logfmt");
 var mongo =         require('mongodb').MongoClient;
+var ObjectID =      require('mongodb').ObjectID;
 var bodyParser =    require('body-parser');
 var numeral =       require('numeral');
 var passport =      require('passport');
 var LocalStrategy = require('passport-local').Strategy;
+var moment =        require('moment');
 
 var app = express();
 
@@ -78,7 +80,7 @@ mongo.connect(dbString, function(err,dbase) {
 // Root path
 app.get('/', requireAuth, function(req, res) {
     // fetch customers and render them
-    var customers = db.collection('customers').find().sort( {name:1});
+    var customers = db.collection('customers').find().sort( {name:1} );
     customers.toArray(function(err, results) {
       var i;
       var customers = '';
@@ -86,14 +88,14 @@ app.get('/', requireAuth, function(req, res) {
         customer = results[i];
         customer.link = '/' + encodeURIComponent(customer.name) + '/buy';
         customer.tab = numeral(customer.tab).format('$0.00');
-        app.render('customer.html',{customer:customer},function(err,html) {
+        app.render('trows/customer.html',{customer:customer},function(err,html) {
           customers = customers + html;
         });
     }
 
     // Add the 'create a new customer' entry
     var newCustomer = {name:"<b>Add New</b>",link:"/newcustomer",tab:0};
-    app.render('customer.html',{customer:newCustomer},function(err,html) {
+    app.render('trows/customer.html',{customer:newCustomer},function(err,html) {
       customers = html + customers;
     });
 
@@ -148,14 +150,14 @@ app.get('/:customer/buy', requireAuth, function(req,res) {
       drink = results[i];
       drink.price = numeral(drink.price).format('$0.00');
       drink.link = '/' + encodeURIComponent(req.customer.name) + '/buy/' + encodeURIComponent(drink.name);
-      app.render('drink.html',{drink:drink},function(err,html) {
+      app.render('trows/drink.html',{drink:drink},function(err,html) {
         drinks = drinks + html;
       });
     }
 
     // Add the 'create custom drink' entry
     var newDrink = {name:"<b>Create One-Off Drink</b>",link:"/" + encodeURIComponent(req.customer.name) + "/one-off-drink",price:0};
-    app.render('drink.html',{drink:newDrink},function(err,html) {
+    app.render('trows/drink.html',{drink:newDrink},function(err,html) {
       drinks = html + drinks;
     });
 
@@ -238,6 +240,63 @@ app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
   });
 });
 
+app.get('/customers', requireAuth, function(req,res) {
+  // fetch customers and render them
+  var customers = db.collection('customers').find().sort( {name:1} );
+  customers.toArray(function(err, results) {
+    var i;
+    var customers = '';
+    for(i=0;i<results.length;i++) {
+      customer = results[i];
+      customer.link = '/customers/' + encodeURIComponent(customer.name);
+      customer.tab = numeral(customer.tab).format('$0.00');
+      app.render('trows/customer.html',{customer:customer},function(err,html) {
+        customers = customers + html;
+      });
+    }
+
+    res.render('table.html', {
+      locals: {
+        'tabletitle': 'Manage Customers',
+        'tabledata': customers,
+        'title':'Barmaster 9001',
+        'active':'/customers'
+        }
+    });
+  });
+});
+
+app.get('/customers/:customer', requireAuth, function(req,res) {
+  req.customer.tab = numeral(req.customer.tab).format('$0.00');
+  console.log(new ObjectID(req.customer._id));
+
+  var transactions = db.collection('transactions').find( {customer: new ObjectID(req.customer._id)} ).sort( {timestamp: -1} );
+
+  transactions.toArray(function(err, results) {
+    var i;
+    var render = '';
+    for(i=0;i<results.length;i++) {
+      transaction = results[i];
+
+      transaction.amount = numeral(transaction.amount).format('$0.00');
+      transaction.timestamp = moment(transaction.timestamp).format("ddd MMM Mo, H:mm");
+
+      app.render('trows/transaction.html',{transaction:transaction},function(err,html) {
+        render = render + html;
+      });
+    }
+
+    res.render('customerinfo.html', {
+      locals: {
+        'customer': req.customer,
+        'transactions': render,
+        'title':'Customer Info',
+        'active':'/customers'
+        }
+    });
+  });
+});
+
 // Add a customer (JSON)
 app.post('/addcustomer', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.tab) {
@@ -290,7 +349,8 @@ app.post('/modify-tab', requireAuth, function(req,res) {
             var transaction = transactions[0];
             console.log(transaction);
             console.log("Transaction #" + transaction._id + ": " + customer.name + "\'s tab was modified by $" + amount + " because of a " + type);
-          });
+          }
+        );
 
         res.send('{"status":"ok","message":"Tab Modified"}');
       }
