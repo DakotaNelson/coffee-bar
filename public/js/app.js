@@ -65,7 +65,7 @@ var app = {
         url: '/adddrink',
         data: {name:name,teaser:teaser,recipe:recipe,price:+price},
         success: function() {
-          window.location = '/newdrink?success=true';
+          window.location = '/drinks?success=true';
         }
       });
     }

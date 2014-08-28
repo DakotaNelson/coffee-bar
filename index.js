@@ -101,9 +101,9 @@ app.get('/', requireAuth, function(req, res) {
 
     res.render('table.html', {
       locals: {
-        'tabletitle': 'Customers',
+        'tabletitle': 'Who wants a drink?',
         'tabledata': customers,
-        'title':'Barmaster 9001',
+        'title':'Coffeemaster 9001',
         'active':'/'
         }
     });
@@ -166,7 +166,7 @@ app.get('/:customer/buy', requireAuth, function(req,res) {
       locals: {
         'tabletitle': 'Choose a Drink',
         'tabledata': drinks,
-        'title':'Barmaster 9001',
+        'title':'Coffeemaster 9001',
         'active':'/customer/buy'
       }
     });
@@ -208,6 +208,18 @@ app.get('/:customer/buy/:drink', requireAuth, function(req,res) {
   );
 });
 
+// allows a one-off drink - just presents a form to enter the cost of the drink
+app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
+  res.render('customdrink.html', {
+    locals: {
+      'title':'Custom Drink',
+      'customer': req.customer,
+      'success':req.query.success,
+      'active':'/one-off-drink'
+    }
+  });
+});
+
 // Form to add a new customer
 app.get('/newcustomer', requireAuth, function(req,res) {
   res.render('newcustomer.html', {
@@ -219,24 +231,64 @@ app.get('/newcustomer', requireAuth, function(req,res) {
 });
 
 // Form to add a new drink
-app.get('/newdrink', requireAuth, function(req,res) {
+app.get('/drinks/new-drink', requireAuth, function(req,res) {
   res.render('newdrink.html', {
     locals: {
       'title':'New Drink',
       'success':req.query.success,
-      'active':'/newdrink'
+      'active':'/drinks/new-drink'
     }
   });
 });
 
-app.get('/:customer/one-off-drink', requireAuth, function(req,res) {
-  res.render('customdrink.html', {
-    locals: {
-      'title':'Custom Drink',
-      'customer': req.customer,
-      'success':req.query.success,
-      'active':'/one-off-drink'
+app.get('/drinks', requireAuth, function(req,res) {
+  var drinks = db.collection('drinks').find();
+  drinks.toArray(function(err, results) {
+    var i;
+    var all_html = '';
+
+    for(i=0;i<results.length;i++) {
+      drink = results[i];
+      drink.price = numeral(drink.price).format('$0.00');
+      drink.link = '/drinks/' + encodeURIComponent(drink.name);
+      app.render('trows/drink.html',{drink:drink},function(err,html) {
+        all_html = all_html + html;
+      });
     }
+
+    // Add the 'add new' entry
+    var newDrink = {
+                    name:"<b>Add New Drink</b>",
+                    link:"/drinks/new-drink",
+                    price:0
+                   };
+
+    app.render('trows/drink.html',{drink:newDrink},function(err,html) {
+      all_html = html + all_html;
+    });
+
+
+    res.render('table.html', {
+      locals: {
+        'tabletitle': 'Manage drinks',
+        'tabledata': all_html,
+        'title':'Coffeemaster 9001',
+        'active':'/drinks'
+      }
+    });
+  });
+});
+
+// see a drink's management page
+app.get('/drinks/:drink', requireAuth, function(req,res) {
+  req.drink.price = numeral(req.drink.price).format('$0.00');
+
+  res.render('drinkinfo.html', {
+    locals: {
+      'drink': req.drink,
+      'title':'Drink Info',
+      'active':'/drinks'
+      }
   });
 });
 
@@ -259,13 +311,14 @@ app.get('/customers', requireAuth, function(req,res) {
       locals: {
         'tabletitle': 'Manage Customers',
         'tabledata': customers,
-        'title':'Barmaster 9001',
+        'title':'Coffeemaster 9001',
         'active':'/customers'
         }
     });
   });
 });
 
+// see a customer's info page (currently only a list of transactions)
 app.get('/customers/:customer', requireAuth, function(req,res) {
   req.customer.tab = numeral(req.customer.tab).format('$0.00');
   console.log(new ObjectID(req.customer._id));
@@ -321,6 +374,7 @@ app.post('/adddrink', requireAuth, function(req,res) {
   }
 });
 
+// manually modify a customer's tab
 app.post('/modify-tab', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.amount) {
     var amount = +req.body.amount;
