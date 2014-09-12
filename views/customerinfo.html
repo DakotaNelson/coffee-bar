@@ -1,9 +1,21 @@
 <% include header.html %>
 
-<h1><%- customer.name %></h1>
+<h1 id="name"><%- customer.name %></h1>
 
 <br>
-<h4>Current tab: <%- customer.tab %></h4>
+<h4>Current tab: <strong><%- customer.tab %></strong></h4>
+
+<form class="form-inline" role="form" autocomplete="off">
+
+  <div class="form-group">
+    <label class="sr-only" for="deposit">Make deposit to tab:</label>
+    <input name="deposit" type="text" class="form-control" id="deposit" placeholder="Deposit to Tab" autofocus="true">
+
+    <button type="submit" class="btn btn-default" onclick="app.makeDeposit()">Add Funds</button>
+  </div>
+
+</form>
+
 <br>
 
 <h3>Transactions</h3>

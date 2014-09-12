@@ -98,13 +98,22 @@ var app = {
 
   makeDeposit: function() {
     var valid = true;
+
+    var name = $("#name").text();
+
+    var amount = $("#deposit").val();
+    if(!amount || isNaN(amount)) {
+      $('#price').parent('div').addClass('has-error');
+      valid = false;
+    }
+
     if(valid) {
       $.ajax({
         type: 'POST',
         url: '/modify-tab',
         data: {name:name, amount:+amount, type: "deposit", drink: null},
         success: function() {
-          window.location = '/';
+          location.reload();
         }
       });
     }

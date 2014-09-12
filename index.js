@@ -390,7 +390,7 @@ app.post('/modify-tab', requireAuth, function(req,res) {
     var name = req.body.name;
     var type = req.body.type;
     var drink = req.body.drink;
-    var timestamp = new Date();
+    var timestamp = new Date(); // TODO this means that timestamps depend on the computer's local time, which is bad
     console.log("Adding " + amount + " to tab of " + name + " because " + type);
 
     db.collection('customers').findOne({name: name},
