@@ -97,6 +97,7 @@ var app = {
   },
 
   makeDeposit: function() {
+    var valid = true;
     if(valid) {
       $.ajax({
         type: 'POST',
@@ -108,5 +109,17 @@ var app = {
       });
     }
     return false;
+  },
+
+  deleteDrink: function() {
+    var name = $("#drink-name").text();
+    $.ajax({
+      type: 'POST',
+      url: '/delete-drink',
+      data: {name:name},
+      success: function() {
+        window.location = '/drinks';
+      }
+    });
   }
 };

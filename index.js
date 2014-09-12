@@ -374,6 +374,15 @@ app.post('/adddrink', requireAuth, function(req,res) {
   }
 });
 
+// Remove a drink (JSON)
+app.post('/delete-drink', requireAuth, function(req,res) {
+  console.log(req.body.name);
+  db.collection('drinks').remove({name:req.body.name},function(err,removed) {
+    console.log(removed);
+    res.send('{"status":"ok","message":"Drink Removed"}');
+  });
+});
+
 // manually modify a customer's tab
 app.post('/modify-tab', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.amount) {

@@ -1,6 +1,6 @@
 <% include header.html %>
 
-<h1><%- drink.name %></h1>
+<h1 id="drink-name"><%- drink.name %></h1>
 
 <h3>Price: <%- drink.price %></h3>
 
@@ -9,6 +9,6 @@
 <br>
 
 <button type="button" class="btn btn-default">Edit Drink</button>
-<button type="button" class="btn btn-danger">Delete Drink</button>
+<button type="button" class="btn btn-danger" onclick="app.deleteDrink();">Delete Drink</button>
 
 <% include footer.html %>
