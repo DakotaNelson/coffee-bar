@@ -142,7 +142,7 @@ app.param('drink',function(req,res,next,id) {
 });
 
 app.get('/:customer/buy', requireAuth, function(req,res) {
-  var drinks = db.collection('drinks').find();
+  var drinks = db.collection('drinks').find().sort( {name:1} );
   drinks.toArray(function(err, results) {
     var i;
     var drinks = '';
@@ -242,7 +242,7 @@ app.get('/drinks/new-drink', requireAuth, function(req,res) {
 });
 
 app.get('/drinks', requireAuth, function(req,res) {
-  var drinks = db.collection('drinks').find();
+  var drinks = db.collection('drinks').find().sort( {name:1} );
   drinks.toArray(function(err, results) {
     var i;
     var all_html = '';
