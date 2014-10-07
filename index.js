@@ -321,7 +321,7 @@ app.get('/customers', requireAuth, function(req,res) {
 // see a customer's info page (currently only a list of transactions)
 app.get('/customers/:customer', requireAuth, function(req,res) {
   req.customer.tab = numeral(req.customer.tab).format('$0.00');
-  console.log(new ObjectID(req.customer._id));
+  //console.log(new ObjectID(req.customer._id));
 
   var transactions = db.collection('transactions').find( {customer: new ObjectID(req.customer._id)} ).sort( {timestamp: -1} );
 
@@ -350,10 +350,27 @@ app.get('/customers/:customer', requireAuth, function(req,res) {
   });
 });
 
+// add a Venmo account to a user account
+// (by Venmo account a I mean a Venmo username string)
+app.post('/add-venmo', requireAuth, function(req,res) {
+  if(req.body && req.body.name && req.body.venmo) {
+    db.collection('customers').update(
+        {name:req.body.name},
+        {$set: {venmo:req.body.venmo}},
+        {w:1},
+      function(err) {
+        res.send('{"status":"ok","message":"Venmo Added"}');
+      });
+  }
+  else {
+    res.send('{"status":"nok","message":"Customer not Found"}');
+  }
+});
+
 // Add a customer (JSON)
 app.post('/addcustomer', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.tab) {
-    db.collection('customers').insert({name:req.body.name,tab:+req.body.tab,transactions:[]},function(err,docs) {
+    db.collection('customers').insert({name:req.body.name,venmo:req.body.venmo,tab:+req.body.tab,transactions:[]},function(err,docs) {
       res.send('{"status":"ok","message":"Customer Added"}');
     });
   }
@@ -424,4 +441,14 @@ app.post('/modify-tab', requireAuth, function(req,res) {
   else {
     res.send('{"status":"nok","message":"Data Missing"}');
   }
+});
+
+app.get('/money', requireAuth, function(req,res) {
+  res.render('money.html', {
+    locals: {
+      'balance': numeral(10.5).format('$0.00'),
+      'title':'Coffeemaster 9001',
+      'active':'/money'
+      }
+  });
 });
