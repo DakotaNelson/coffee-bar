@@ -139,6 +139,7 @@ var app = {
   },
 
   addVenmo: function() {
+    // update a user with their Venmo username
     var valid = true;
 
     var venmo = $("#venmo").val();
@@ -148,6 +149,8 @@ var app = {
       $('#venmo').parent('div').addClass('has-error');
       valid = false;
     }
+    // no check for name since it's a page element and is therefore guaranteed
+    // to be good (as much as anything is, really)
 
     if(valid) {
       $.ajax({
@@ -163,5 +166,19 @@ var app = {
       });
     }
     return false;
+  },
+
+  venmoCharge: function() {
+  // tell the server to issue Venmo charges
+    $.ajax({
+      type: 'POST',
+      url: '/venmo-charges',
+      data: {},
+      success: function() {
+        location.reload();
+      }
+    });
+    return false;
+    // since we're refreshing anyway this doesn't matter, but whatever
   }
 };

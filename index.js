@@ -8,6 +8,7 @@ var numeral =       require('numeral');
 var passport =      require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var moment =        require('moment');
+var request =       require('request');
 
 var app = express();
 
@@ -365,6 +366,31 @@ app.post('/add-venmo', requireAuth, function(req,res) {
   else {
     res.send('{"status":"nok","message":"Customer not Found"}');
   }
+});
+
+// issue Venmo charges for all outstanding debt
+app.post('/venmo-charges', requireAuth, function(req,res) {
+  var endpoint = "https://api.venmo.com/v1/payments";
+
+  // get all users with Venmo accounts who owe us money
+
+  // get the venmo access token from the db
+
+  // loop through each user and charge them
+  request.post({
+      url: endpoint,
+      form: { access_token: "",
+              user_id: "",
+              note: "",
+              amount: "", // negative = charge
+              audience: "private"
+            },
+      },
+    function(error, response, body) {
+      // do stuff
+      // probably store transaction so we can check to see which transactions complete
+      // and which don't, as well as credit accounts correctly (i.e. no double crediting)
+  });
 });
 
 // Add a customer (JSON)
