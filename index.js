@@ -368,31 +368,6 @@ app.post('/add-venmo', requireAuth, function(req,res) {
   }
 });
 
-// issue Venmo charges for all outstanding debt
-app.post('/venmo-charges', requireAuth, function(req,res) {
-  var endpoint = "https://api.venmo.com/v1/payments";
-
-  // get all users with Venmo accounts who owe us money
-
-  // get the venmo access token from the db
-
-  // loop through each user and charge them
-  request.post({
-      url: endpoint,
-      form: { access_token: "",
-              user_id: "",
-              note: "",
-              amount: "", // negative = charge
-              audience: "private"
-            },
-      },
-    function(error, response, body) {
-      // do stuff
-      // probably store transaction so we can check to see which transactions complete
-      // and which don't, as well as credit accounts correctly (i.e. no double crediting)
-  });
-});
-
 // Add a customer (JSON)
 app.post('/addcustomer', requireAuth, function(req,res) {
   if(req.body && req.body.name && req.body.tab) {
@@ -470,11 +445,25 @@ app.post('/modify-tab', requireAuth, function(req,res) {
 });
 
 app.get('/money', requireAuth, function(req,res) {
-  res.render('money.html', {
-    locals: {
-      'balance': numeral(10.5).format('$0.00'),
-      'title':'Coffeemaster 9001',
-      'active':'/money'
+  db.collection('customers').aggregate( [
+      { 
+        $match: { tab : { '$lt': 0 } } 
+      },
+      { 
+        $group: {
+          '_id' : 'sum',
+          total: { '$sum' : '$tab' }
+        }
       }
-  });
+      ], function(err, result) {
+        console.log(result);
+        var owed = result[0].total;
+        res.render('money.html', {
+          locals: {
+            'balance': numeral(owed).format('$0.00'),
+            'title':'Coffeemaster 9001',
+            'active':'/money'
+            }
+        });
+      });
 });

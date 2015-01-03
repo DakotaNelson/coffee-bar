@@ -166,19 +166,5 @@ var app = {
       });
     }
     return false;
-  },
-
-  venmoCharge: function() {
-  // tell the server to issue Venmo charges
-    $.ajax({
-      type: 'POST',
-      url: '/venmo-charges',
-      data: {},
-      success: function() {
-        location.reload();
-      }
-    });
-    return false;
-    // since we're refreshing anyway this doesn't matter, but whatever
   }
 };
