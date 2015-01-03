@@ -1,27 +1,33 @@
 var app = {
   newCustomer: function() {
     var name = $('#name').val();
+    var venmo = $('#venmo').val();
     var tab = new Number($('#tab').val());
 
     var valid = true;
     $('#name').parent('div').removeClass('has-error');
+    $('#venmo').parent('div').removeClass('has-error');
     $('#tab').parent('div').removeClass('has-error');
 
     if(!name) {
       $('#name').parent('div').addClass('has-error');
       valid = false;
     }
+    /*if(!venmo) {
+      $('#venmo').parent('div').addClass('has-error');
+      valid = false;
+    }*/
+    // it's okay to not add a Venmo
     if(!tab || isNaN(tab)) {
       $('#tab').parent('div').addClass('has-error');
       valid = false;
     }
 
     if(valid) {
-      //valid
       $.ajax({
         type: 'POST',
         url: '/addcustomer',
-        data: {name:name,tab:+tab},
+        data: {name:name,venmo:venmo,tab:+tab},
         success: function() {
           window.location='/';
         }
@@ -130,5 +136,35 @@ var app = {
         window.location = '/drinks';
       }
     });
+  },
+
+  addVenmo: function() {
+    // update a user with their Venmo username
+    var valid = true;
+
+    var venmo = $("#venmo").val();
+    var name = $("#name").text();
+
+    if(!venmo) {
+      $('#venmo').parent('div').addClass('has-error');
+      valid = false;
+    }
+    // no check for name since it's a page element and is therefore guaranteed
+    // to be good (as much as anything is, really)
+
+    if(valid) {
+      $.ajax({
+        type: 'POST',
+        url: '/add-venmo',
+        data: {name:name,venmo:venmo},
+        success: function() {
+          delay(200); // allow time for db to update
+          // this is a waste, but 200ms matters less to me than
+          // the dev time to make it go away
+          location.reload();
+        }
+      });
+    }
+    return false;
   }
 };

@@ -18,6 +18,20 @@
 
 <br>
 
+<h4>Linked Venmo: <strong><%- customer.venmo %></strong></h4>
+<form class="form-inline" role="form" autocomplete="off">
+
+  <div class="form-group">
+    <label class="sr-only" for="venmo">Add a Venmo account:</label>
+    <input name="venmo" type="text" class="form-control" id="venmo" placeholder="Link a Venmo account">
+
+    <button type="submit" class="btn btn-default" onclick="app.addVenmo()">Add Venmo</button>
+  </div>
+
+</form>
+
+<br>
+
 <h3>Transactions</h3>
 <table class="table table-striped">
   <thead>
