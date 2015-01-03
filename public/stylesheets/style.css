@@ -5,6 +5,12 @@ body {
   padding: 40px 15px;
   text-align: center;
 }
+.row {
+  height: 60px;
+}
+.row td {
+  vertical-align: middle!important;
+}
 .customer-row {
   cursor: pointer;
 }
