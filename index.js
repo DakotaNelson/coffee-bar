@@ -467,3 +467,84 @@ app.get('/money', requireAuth, function(req,res) {
         });
       });
 });
+
+//////////////// VENMO WEBHOOKS ////////////////
+
+app.get('/venmo-webhook', function(req,res) {
+  // respond to Venmo webhook challenge
+  console.log("Venmo challenge:");
+  console.log(req.query);
+  console.log("Referrer:");
+  console.log(req.header.referrer);
+
+  res.send(req.query.venmo_challenge);
+});
+
+app.post('/venmo-webhook', function(req,res) {
+  console.log(req.body);
+  var payment = req.body;
+
+  if(payment.data.status != "settled") {
+    // if the payment is anything other than over and done with, we don't care
+    return res.send(200);
+  }
+
+  var from = payment.data.actor.username;
+  var to = payment.data.target.user.username;
+  var amount = payment.data.amount;
+  console.log(from);
+  console.log(to);
+  console.log(amount);
+
+  if(from == null || to == null || amount == null) {
+    console.log("Vemno Webhook: Something is null.")
+    return res.send(200);
+  }
+
+  if(to != "pass-norecord" || payment.data.action != "pay") {
+    // if it's not to us, we don't care
+    // if it's not a payment, we don't care
+    console.log("Vemno Webhook: Not a payment or not to us.")
+    return res.send(200);
+  }
+
+  db.collection('customers').findOne({venmo:from}, function(err, customer) {
+    // find the user linked to the venmo account
+    if(err || customer == null) {
+      console.log("Problem fetching customer's venmo account:");
+      console.log(err);
+      return res.send(200);
+    }
+
+    // else we have a user with a venmo account of that name
+    console.log("Venmo user found!");
+    console.log(customer);
+
+    var timestamp = new Date();
+
+    // update the customer's tab
+    db.collection('customers').update(
+      {name: customer.name},
+      {
+        $inc: { tab: amount },
+      },
+      {safe:true},
+      function(err,customers) {
+      }
+    );
+
+    // and create a transaction to log this deposit
+    db.collection('transactions').insert(
+      {type: "Venmo payment", drink: null, customer: customer._id, timestamp: timestamp, amount: amount},
+      {safe: true},
+      function(err, transactions) {
+        var transaction = transactions[0];
+        console.log(transaction);
+        console.log("Transaction #" + transaction._id + ": " + customer.name + "\'s tab was modified by $" + amount + " because of a Venmo deposit");
+      }
+    );
+
+    return res.send(200);
+  });
+
+});

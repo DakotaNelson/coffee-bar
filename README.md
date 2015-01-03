@@ -15,3 +15,8 @@ Run:
 mongod --dbpath=./mongo     (or whatever your path is)
 foreman start
 ```
+
+#### Todo:
+ * Tests!
+ * Show last ten transactions.
+ * Turn users into a class/object to make the code cleaner.
