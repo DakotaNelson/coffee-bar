@@ -18,5 +18,5 @@ foreman start
 
 #### Todo:
  * Tests!
- * Show last ten transactions.
+ * ~~Show last ten transactions.~~
  * Turn users into a class/object to make the code cleaner.
