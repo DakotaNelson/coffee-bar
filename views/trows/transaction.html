@@ -1,4 +1,7 @@
 <tr>
+  <% if(transaction.customer) { %>
+  <td><%-transaction.customer%></td>
+  <% } %>
   <td><%-transaction.timestamp%></td>
   <td><%-transaction.type%></td>
   <td><%-transaction.drink%></td>

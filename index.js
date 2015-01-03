@@ -2,13 +2,14 @@ var express =       require("express");
 var session =       require("express-session");
 var logfmt =        require("logfmt");
 var mongo =         require('mongodb').MongoClient;
-var ObjectID =      require('mongodb').ObjectID;
+var ObjectId =      require('mongodb').ObjectID;
 var bodyParser =    require('body-parser');
 var numeral =       require('numeral');
 var passport =      require('passport');
 var LocalStrategy = require('passport-local').Strategy;
 var moment =        require('moment');
 var request =       require('request');
+var async =         require('async');
 
 var app = express();
 
@@ -324,7 +325,7 @@ app.get('/customers/:customer', requireAuth, function(req,res) {
   req.customer.tab = numeral(req.customer.tab).format('$0.00');
   //console.log(new ObjectID(req.customer._id));
 
-  var transactions = db.collection('transactions').find( {customer: new ObjectID(req.customer._id)} ).sort( {timestamp: -1} );
+  var transactions = db.collection('transactions').find( {customer: new ObjectId(req.customer._id)} ).sort( {timestamp: -1} );
 
   transactions.toArray(function(err, results) {
     var i;
@@ -332,6 +333,7 @@ app.get('/customers/:customer', requireAuth, function(req,res) {
     for(i=0;i<results.length;i++) {
       transaction = results[i];
 
+      transaction.customer = false; // we don't need this
       transaction.amount = numeral(transaction.amount).format('$0.00');
       transaction.timestamp = moment(transaction.timestamp).format("ddd MMM Mo, H:mm");
 
@@ -445,27 +447,71 @@ app.post('/modify-tab', requireAuth, function(req,res) {
 });
 
 app.get('/money', requireAuth, function(req,res) {
-  db.collection('customers').aggregate( [
-      { 
-        $match: { tab : { '$lt': 0 } } 
-      },
-      { 
-        $group: {
-          '_id' : 'sum',
-          total: { '$sum' : '$tab' }
-        }
-      }
-      ], function(err, result) {
-        console.log(result);
-        var owed = result[0].total;
-        res.render('money.html', {
-          locals: {
-            'balance': numeral(owed).format('$0.00'),
-            'title':'Coffeemaster 9001',
-            'active':'/money'
+  async.parallel({
+    owed: function(callback) {
+      db.collection('customers').aggregate( [
+          {
+            $match: { tab : { '$lt': 0 } }
+          },
+          {
+            $group: {
+              '_id' : 'sum',
+              total: { '$sum' : '$tab' }
             }
+          }
+          ], 
+          function(err, result) {
+            if(result.length < 1) {
+              //console.log("We're not owed any money.");
+              callback(null, 0);
+              return;
+            }
+            var owed = result[0].total;
+            callback(null, owed);
+          });
+    },
+    transactions: function(callback) {
+      // get a list of transactions sorted by time
+      var last_ten = db.collection('transactions').find().sort( {timestamp:-1} ).limit(10);
+      last_ten.toArray(function(err, list) {
+        console.log(list);
+        async.mapSeries(list, function(transaction, mapCallback) {
+          // pretty inefficient - lots of DB hits (and one at a time due to order mattering)
+
+          // we have the customer ID, we need their name
+          var oid = new ObjectId(transaction.customer);
+          db.collection('customers').findOne({'_id': oid}, function(err, customer) {
+            console.log("Customer:");
+            console.log(customer.name);
+
+            transaction.customer = customer.name;
+            transaction.amount = numeral(transaction.amount).format('$0.00');
+            transaction.timestamp = moment(transaction.timestamp).format("ddd MMM Mo, H:mm");
+
+            app.render('trows/transaction.html',{transaction:transaction},function(err,html) {
+              mapCallback(null, html);
+            });
+          });
+        },
+        function(err, results) {
+          console.log(results);
+          var render = results.join('');
+          callback(null, render);
         });
       });
+    }
+  },
+  function(err, results) {
+    console.log(results);
+    res.render('money.html', {
+      locals: {
+        'balance': numeral(results.owed).format('$0.00'),
+        'transactions': results.transactions,
+        'title':'Coffeemaster 9001',
+        'active':'/money'
+        }
+    });
+  });
 });
 
 //////////////// VENMO WEBHOOKS ////////////////

@@ -3,6 +3,26 @@
 <h1>Manage Funds</h1>
 
 <br>
-<h4>Current outstanding balance: <strong><%- balance %></strong></h4>
+<h4 class="bg-info" style="padding:15px;">Current outstanding balance: <strong><%- balance %></strong></h4>
+
+<br>
+<br>
+
+<h3>Past Ten Transactions</h3>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Customer</th>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Drink</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <%- transactions %>
+  </tbody>
+</table>
 
 <% include footer.html %>
