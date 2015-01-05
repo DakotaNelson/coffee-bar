@@ -10,6 +10,7 @@ var LocalStrategy = require('passport-local').Strategy;
 var moment =        require('moment');
 var request =       require('request');
 var async =         require('async');
+var transaction =   require('./transaction.js'); // executed with db connection when mongoDB connection established
 
 var app = express();
 
@@ -77,6 +78,8 @@ mongo.connect(dbString, function(err,dbase) {
 
   db = dbase;
   console.log("Connected to MongoDB");
+
+  transaction = transaction(db);
 });
 
 // Root path
@@ -175,25 +178,12 @@ app.get('/:customer/buy', requireAuth, function(req,res) {
   });
 });
 
+// actually executes the purchase of a drink
 app.get('/:customer/buy/:drink', requireAuth, function(req,res) {
   var customer = req.customer;
   var drink = req.drink;
-  var timestamp = new Date();
 
-  db.collection('transactions').insert({type: "purchase", drink: drink.name, customer: customer._id, timestamp: timestamp, amount: -drink.price},
-    {safe:true},
-    function(err, transactions) {
-      var transaction = transactions[0];
-      console.log("Transaction #" + transaction._id + ": " + customer.name + " bought a " + drink.name + " for $" + drink.price);
-    }
-  );
-
-  db.collection('customers').update(
-    {_id:customer._id},
-    {
-      $inc: { tab: -drink.price }, // subtracts the price from the customer's tab
-    },
-    {safe:true},
+  transaction.purchase(customer, drink,
     function(err,object) {
       customer.firstName = customer.name.split(" ")[0];
       drink.price = numeral(drink.price).format('$0.00');
@@ -331,13 +321,13 @@ app.get('/customers/:customer', requireAuth, function(req,res) {
     var i;
     var render = '';
     for(i=0;i<results.length;i++) {
-      transaction = results[i];
+      this_transaction = results[i];
 
-      transaction.customer = false; // we don't need this
-      transaction.amount = numeral(transaction.amount).format('$0.00');
-      transaction.timestamp = moment(transaction.timestamp).format("ddd MMM Mo, H:mm");
+      this_transaction.customer = false; // we don't need this
+      this_transaction.amount = numeral(this_transaction.amount).format('$0.00');
+      this_transaction.timestamp = moment(this_transaction.timestamp).format("ddd MMM Mo, H:mm");
 
-      app.render('trows/transaction.html',{transaction:transaction},function(err,html) {
+      app.render('trows/transaction.html',{transaction:this_transaction},function(err,html) {
         render = render + html;
       });
     }
@@ -396,7 +386,6 @@ app.post('/adddrink', requireAuth, function(req,res) {
 
 // Remove a drink (JSON)
 app.post('/delete-drink', requireAuth, function(req,res) {
-  console.log(req.body.name);
   db.collection('drinks').remove({name:req.body.name},function(err,removed) {
     console.log(removed);
     res.send('{"status":"ok","message":"Drink Removed"}');
@@ -474,15 +463,12 @@ app.get('/money', requireAuth, function(req,res) {
       // get a list of transactions sorted by time
       var last_ten = db.collection('transactions').find().sort( {timestamp:-1} ).limit(10);
       last_ten.toArray(function(err, list) {
-        console.log(list);
         async.mapSeries(list, function(transaction, mapCallback) {
           // pretty inefficient - lots of DB hits (and one at a time due to order mattering)
 
           // we have the customer ID, we need their name
           var oid = new ObjectId(transaction.customer);
           db.collection('customers').findOne({'_id': oid}, function(err, customer) {
-            console.log("Customer:");
-            console.log(customer.name);
 
             transaction.customer = customer.name;
             transaction.amount = numeral(transaction.amount).format('$0.00');
@@ -494,7 +480,6 @@ app.get('/money', requireAuth, function(req,res) {
           });
         },
         function(err, results) {
-          console.log(results);
           var render = results.join('');
           callback(null, render);
         });
@@ -502,7 +487,6 @@ app.get('/money', requireAuth, function(req,res) {
     }
   },
   function(err, results) {
-    console.log(results);
     res.render('money.html', {
       locals: {
         'balance': numeral(results.owed).format('$0.00'),

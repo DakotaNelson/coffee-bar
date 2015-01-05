@@ -19,4 +19,5 @@ foreman start
 #### Todo:
  * Tests!
  * ~~Show last ten transactions.~~
- * Turn users into a class/object to make the code cleaner.
+ * Turn customers into a class/object to make the code cleaner.
+ * Show past five rejected Venmo transactions (i.e. where a matching Venmo username couldn't be found)
